@@ -193,6 +193,9 @@ export default function Home() {
       ? status === "connecting"
       : ledgerStatus === "connecting" || supportsLedger !== true;
 
+  const showKeplrStats = status === "connected" && Boolean(walletAccount.address);
+  const showLedgerStats = ledgerStatus === "connected" && Boolean(ledgerAccount.address);
+
   const handleConnectSelected = () => {
     if (selectedWallet === "keplr") {
       return connectWallet();
@@ -327,58 +330,66 @@ export default function Home() {
               </p>
             )}
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/60">Wallet</p>
-                <p className="mt-1 font-semibold text-white">
-                  {walletAccount.address ? formatAddress(walletAccount.address) : "Not connected"}
-                </p>
+            {showKeplrStats && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Wallet</p>
+                  <p className="mt-1 font-semibold text-white">
+                    {walletAccount.address ? formatAddress(walletAccount.address) : "Not connected"}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Wallet name</p>
+                  <p className="mt-1 font-semibold text-white">{walletAccount.name ?? "N/A"}</p>
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Next step</p>
+                  <p className="mt-1 font-semibold text-white/80">
+                    Review any transactions in Keplr before approving them.
+                  </p>
+                </div>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/60">Wallet name</p>
-                <p className="mt-1 font-semibold text-white">{walletAccount.name ?? "N/A"}</p>
-              </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/60">Next step</p>
-                <p className="mt-1 font-semibold text-white/80">
-                  Review any transactions in Keplr before approving them.
-                </p>
-              </div>
-            </div>
+            )}
 
-            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/60">Ledger address</p>
-                <p className="mt-1 font-semibold text-white">
-                  {ledgerAccount.address ? formatAddress(ledgerAccount.address) : "Not connected"}
-                </p>
-                {ledgerAccount.publicKey && (
-                  <p className="text-[0.65rem] text-white/60 mt-2 break-all">
-                    {formatPublicKey(ledgerAccount.publicKey)}
+            {showLedgerStats && (
+              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Ledger address</p>
+                  <p className="mt-1 font-semibold text-white">
+                    {ledgerAccount.address ? formatAddress(ledgerAccount.address) : "Not connected"}
                   </p>
-                )}
-              </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/60">Ledger app</p>
-                <p className="mt-1 font-semibold text-white">
-                  {ledgerAppInfo ? `Cosmos v${ledgerAppInfo.version}` : "Open Cosmos app on Ledger"}
-                </p>
-                {ledgerAppInfo && (
-                  <p className="text-xs text-white/60">
-                    {ledgerAppInfo.testMode ? "Test app" : "Production app"} ·{" "}
-                    {ledgerAppInfo.deviceLocked ? "Locked" : "Unlocked"}
+                  {ledgerAccount.publicKey && (
+                    <p className="text-[0.65rem] text-white/60 mt-2 break-all">
+                      {formatPublicKey(ledgerAccount.publicKey)}
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Ledger app</p>
+                  <p className="mt-1 font-semibold text-white">
+                    {ledgerAppInfo ? `Cosmos v${ledgerAppInfo.version}` : "Open Cosmos app on Ledger"}
                   </p>
-                )}
+                  {ledgerAppInfo && (
+                    <p className="text-xs text-white/60">
+                      {ledgerAppInfo.testMode ? "Test app" : "Production app"} ·{" "}
+                      {ledgerAppInfo.deviceLocked ? "Locked" : "Unlocked"}
+                    </p>
+                  )}
+                </div>
+                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Next step</p>
+                  <p className="mt-1 font-semibold text-white/80">
+                    {ledgerStatus === "connected"
+                      ? "Approve Cosmos transactions directly on your Ledger."
+                      : "Open the Cosmos app and confirm the connection on your Ledger device."}
+                  </p>
+                </div>
               </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                <p className="text-xs uppercase tracking-[0.3em] text-white/60">Next step</p>
-                <p className="mt-1 font-semibold text-white/80">
-                  {ledgerStatus === "connected"
-                    ? "Approve Cosmos transactions directly on your Ledger."
-                    : "Open the Cosmos app and confirm the connection on your Ledger device."}
-                </p>
-              </div>
-            </div>
+            )}
+
+            {!showKeplrStats && !showLedgerStats && (
+              <p className="text-sm text-white/70">Connect a wallet to view its details.</p>
+            )}
 
             {selectedStatusMessage && (
               <p className="text-sm text-white/70">{selectedStatusMessage}</p>
