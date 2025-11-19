@@ -41,6 +41,7 @@ export default function Home() {
   const [ledgerAccount, setLedgerAccount] = useState<LedgerAccount>({});
   const [ledgerStatusMessage, setLedgerStatusMessage] = useState("");
   const [ledgerAppInfo, setLedgerAppInfo] = useState<LedgerAppInfo | null>(null);
+  const [selectedWallet, setSelectedWallet] = useState<"keplr" | "ledger">("keplr");
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -174,14 +175,30 @@ export default function Home() {
     ledgerStatusMessage,
   ]);
 
-  const ledgerButtonLabel =
-    ledgerStatus === "connecting"
-      ? "Connecting..."
-      : ledgerAccount.address
-      ? "Re-connect Ledger"
-      : "Connect Ledger";
+  const selectedStatusMessage = selectedWallet === "keplr" ? statusMessage : ledgerStatusMessage;
 
-  const ledgerButtonDisabled = ledgerStatus === "connecting" || supportsLedger !== true;
+  const connectButtonLabel = useMemo(() => {
+    if (selectedWallet === "keplr") {
+      if (status === "connecting") return "Connecting Keplr...";
+      if (walletAccount.address) return "Re-connect Keplr";
+      return "Connect Keplr";
+    }
+    if (ledgerStatus === "connecting") return "Connecting Ledger...";
+    if (ledgerAccount.address) return "Re-connect Ledger";
+    return "Connect Ledger";
+  }, [ledgerAccount.address, ledgerStatus, selectedWallet, status, walletAccount.address]);
+
+  const connectButtonDisabled =
+    selectedWallet === "keplr"
+      ? status === "connecting"
+      : ledgerStatus === "connecting" || supportsLedger !== true;
+
+  const handleConnectSelected = () => {
+    if (selectedWallet === "keplr") {
+      return connectWallet();
+    }
+    return connectLedger();
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-6 py-12 text-white">
@@ -216,37 +233,83 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-6">
+            <div className="flex flex-col gap-2">
+              <p className="text-xs uppercase tracking-[0.35em] text-white/60">Choose your wallet</p>
+              <p className="text-sm text-white/70">
+                Pick one connection method at a time. You can switch wallets whenever you need.
+              </p>
+            </div>
+
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4 text-sm text-white/80">
-                <p className="text-[0.85rem] uppercase tracking-[0.3em] text-white/60">
-                  Keplr status
+              <button
+                type="button"
+                onClick={() => setSelectedWallet("keplr")}
+                aria-pressed={selectedWallet === "keplr"}
+                className={`rounded-2xl border p-4 text-left text-sm transition hover:border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                  selectedWallet === "keplr"
+                    ? "border-white/60 bg-white/10 shadow-[0_20px_60px_-35px_rgba(0,0,0,1)]"
+                    : "border-white/5 bg-white/5"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[0.85rem] uppercase tracking-[0.3em] text-white/60">
+                      Keplr wallet
+                    </p>
+                    <p className="mt-1 font-semibold text-white">{connectionState}</p>
+                  </div>
+                  <span className="rounded-full border border-white/20 px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-white/70">
+                    {selectedWallet === "keplr" ? "Selected" : "Choose"}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-white/60">
+                  {hasKeplr
+                    ? "Keplr extension detected in this browser."
+                    : "Install the Keplr extension to connect here."}
                 </p>
-                <p className="mt-1 font-medium text-white">{connectionState}</p>
-              </div>
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4 text-sm text-white/80">
-                <p className="text-[0.85rem] uppercase tracking-[0.3em] text-white/60">
-                  Ledger status
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedWallet("ledger")}
+                aria-pressed={selectedWallet === "ledger"}
+                className={`rounded-2xl border p-4 text-left text-sm transition hover:border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                  selectedWallet === "ledger"
+                    ? "border-white/60 bg-white/10 shadow-[0_20px_60px_-35px_rgba(0,0,0,1)]"
+                    : "border-white/5 bg-white/5"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="text-[0.85rem] uppercase tracking-[0.3em] text-white/60">
+                      Ledger hardware
+                    </p>
+                    <p className="mt-1 font-semibold text-white">{ledgerConnectionState}</p>
+                  </div>
+                  <span className="rounded-full border border-white/20 px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-white/70">
+                    {selectedWallet === "ledger" ? "Selected" : "Choose"}
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-white/60">
+                  {supportsLedger === false
+                    ? "WebUSB not available — use Chrome or Edge with USB enabled."
+                    : "Connect over WebUSB from a supported browser."}
                 </p>
-                <p className="mt-1 font-medium text-white">{ledgerConnectionState}</p>
-              </div>
+              </button>
             </div>
 
             <div className="flex flex-wrap items-center gap-4">
               <button
                 type="button"
-                onClick={connectWallet}
-                disabled={status === "connecting"}
+                onClick={handleConnectSelected}
+                disabled={connectButtonDisabled}
                 className="rounded-full bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-slate-950 shadow-lg shadow-blue-500/30 transition hover:brightness-110 disabled:opacity-60 disabled:hover:brightness-100"
               >
-                {status === "connecting"
-                  ? "Connecting..."
-                  : walletAccount.address
-                  ? "Re-connect wallet"
-                  : "Connect wallet"}
+                {connectButtonLabel}
               </button>
 
-              {!hasKeplr && (
+              {selectedWallet === "keplr" && !hasKeplr && (
                 <a
                   href="https://keplr.app"
                   target="_blank"
@@ -256,18 +319,9 @@ export default function Home() {
                   Install Keplr
                 </a>
               )}
-
-              <button
-                type="button"
-                onClick={connectLedger}
-                disabled={ledgerButtonDisabled}
-                className="rounded-full bg-gradient-to-r from-lime-400 via-emerald-500 to-cyan-500 px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:brightness-110 disabled:opacity-60 disabled:hover:brightness-100"
-              >
-                {ledgerButtonLabel}
-              </button>
             </div>
 
-            {supportsLedger === false && (
+            {supportsLedger === false && selectedWallet === "ledger" && (
               <p className="text-xs text-white/60">
                 Ledger WebUSB is only available in Chromium browsers with USB permissions.
               </p>
@@ -326,8 +380,8 @@ export default function Home() {
               </div>
             </div>
 
-            {statusMessage && (
-              <p className="text-sm text-white/70">{statusMessage}</p>
+            {selectedStatusMessage && (
+              <p className="text-sm text-white/70">{selectedStatusMessage}</p>
             )}
           </div>
         </section>
