@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import CosmosApp from "@ledgerhq/hw-app-cosmos";
 import type Transport from "@ledgerhq/hw-transport";
 import TransportWebUSB from "@ledgerhq/hw-transport-webusb";
+import { LogoMark } from "./components/LogoMark";
 
 type ConnectStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -25,7 +27,7 @@ interface LedgerAppInfo {
   deviceLocked: boolean;
 }
 
-type ChainKey = "cosmoshub" | "chihuahua" | "archway";
+type ChainKey = "chihuahua" | "archway";
 
 interface ChainNetworkConfig {
   chainId: string;
@@ -36,35 +38,26 @@ interface ChainNetworkConfig {
 interface ChainConfig {
   key: ChainKey;
   display: string;
-  accent: string;
   description: string;
+  logoSrc: string;
+  logoAlt: string;
   networks: Record<NetworkEnv, ChainNetworkConfig>;
 }
 
+type ResourceLink = {
+  name: string;
+  href: string;
+  tag: string;
+  description: string;
+};
+
 const CHAIN_OPTIONS: ChainConfig[] = [
-  {
-    key: "cosmoshub",
-    display: "Cosmos Hub (ATOM)",
-    accent: "from-cyan-400 via-blue-500 to-purple-500",
-    description: "The original Cosmos chain securing ATOM.",
-    networks: {
-      mainnet: {
-        chainId: "cosmoshub-4",
-        hrp: "cosmos",
-        ledgerDerivationPath: "44'/118'/0'/0/0",
-      },
-      testnet: {
-        chainId: "theta-testnet-001",
-        hrp: "cosmos",
-        ledgerDerivationPath: "44'/118'/0'/0/0",
-      },
-    },
-  },
   {
     key: "chihuahua",
     display: "Chihuahua (HUAHUA)",
-    accent: "from-amber-300 via-orange-400 to-pink-500",
-    description: "Fast, community-driven meme chain.",
+    description: "Use staked HUAHUA in vault flows for stake-backed liquidity.",
+    logoSrc: "/chihuahua-logo.svg",
+    logoAlt: "ChihuahuaChain logo",
     networks: {
       mainnet: {
         chainId: "chihuahua-1",
@@ -81,8 +74,9 @@ const CHAIN_OPTIONS: ChainConfig[] = [
   {
     key: "archway",
     display: "Archway",
-    accent: "from-emerald-300 via-teal-400 to-blue-500",
-    description: "Smart contract hub for CosmWasm builders.",
+    description: "Use staked Archway assets in vault flows for stake-backed liquidity.",
+    logoSrc: "/archway-logo.svg",
+    logoAlt: "Archway logo",
     networks: {
       mainnet: {
         chainId: "archway-1",
@@ -95,6 +89,27 @@ const CHAIN_OPTIONS: ChainConfig[] = [
         ledgerDerivationPath: "44'/118'/0'/0/0",
       },
     },
+  },
+];
+
+const resources: ResourceLink[] = [
+  {
+    name: "GitHub",
+    href: "https://github.com/sudostake",
+    tag: "GH",
+    description: "Open-source repos and release notes.",
+  },
+  {
+    name: "Telegram",
+    href: "https://t.me/sudostake",
+    tag: "TG",
+    description: "Community chat and support updates.",
+  },
+  {
+    name: "X",
+    href: "https://x.com/sudostake",
+    tag: "X",
+    description: "Product updates and launch announcements.",
   },
 ];
 
@@ -112,7 +127,7 @@ export default function Home() {
   const [ledgerStatusMessage, setLedgerStatusMessage] = useState("");
   const [ledgerAppInfo, setLedgerAppInfo] = useState<LedgerAppInfo | null>(null);
   const [selectedWallet, setSelectedWallet] = useState<"keplr" | "ledger">("keplr");
-  const [selectedChainKey, setSelectedChainKey] = useState<ChainKey>("cosmoshub");
+  const [selectedChainKey, setSelectedChainKey] = useState<ChainKey>("chihuahua");
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkEnv>("mainnet");
 
   const selectedChain = useMemo(
@@ -318,54 +333,84 @@ export default function Home() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 px-6 py-12 text-white">
-      <main className="flex w-full max-w-5xl flex-col gap-8">
-        <section className="flex flex-col gap-4 text-center">
-          <span className="rounded-full border border-white/20 px-4 py-1 text-xs uppercase tracking-[0.3em] text-white/70">
-            Cosmos SDK
-          </span>
-          <h1 className="text-4xl font-semibold leading-tight md:text-5xl">
-            SudoStake makes staking seamless.
-          </h1>
-          <p className="text-lg text-white/80">
-            Connect your wallet to preview rewards, simulate restaking strategies, and
-            secure the best validator experience.
-          </p>
-          <div className="mx-auto h-px w-16 bg-white/40" />
-          <p className="text-sm uppercase tracking-[0.4em] text-white/60">
-            Wallet connection beta
-          </p>
-        </section>
+    <div id="top" className="min-h-dvh bg-[var(--background)] text-[color:var(--text-primary)]">
+      <header className="nav-panel sticky top-0 z-50">
+        <div className="flex w-full items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
+          <a
+            href="#top"
+            className="pixel-heading mr-auto inline-flex items-center gap-3 text-[0.7rem] text-[color:var(--foreground)] sm:text-[0.76rem]"
+            aria-label="SudoStake Cosmos home"
+          >
+            <LogoMark size={34} className="h-9 w-9 flex-none" />
+            <span>SudoStake</span>
+            <span className="pixel-chip text-[color:var(--text-secondary)]">Cosmos</span>
+          </a>
 
-        <section className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-[0_30px_100px_-30px_rgba(15,15,15,0.8)] backdrop-blur">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.4em] text-white/60">
-                Connected network
-              </p>
-              <p className="text-lg font-semibold text-white">
-                {selectedChain.display} · {networkLabel}
-              </p>
-              <p className="text-xs text-white/60">Bech32 prefix {selectedChainNetwork.hrp}</p>
-            </div>
-            <span className="rounded-full bg-white/10 px-4 py-1 text-xs uppercase tracking-[0.3em] text-white/70">
-              {selectedChainNetwork.chainId}
+          <nav className="flex items-center gap-1 text-[0.64rem] text-[color:var(--text-secondary)] sm:gap-2 sm:text-[0.7rem]">
+            <a
+              href="#connect"
+              className="pixel-link focus-soft text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)]"
+            >
+              Connect
+            </a>
+            <a
+              href="#resources"
+              className="pixel-link focus-soft text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)]"
+            >
+              Resources
+            </a>
+          </nav>
+        </div>
+      </header>
+
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:gap-10 sm:px-6 sm:py-10 lg:px-8">
+        <section id="connect" className="surface-card pixel-card px-5 py-6 sm:px-6 sm:py-7">
+          <div className="flex flex-col gap-4">
+            <span className="pixel-chip w-fit text-[color:var(--text-secondary)]">
+              Stake-backed liquidity
             </span>
+            <h1 className="pixel-hero text-[1rem] text-[color:var(--text-primary)] sm:text-[1.32rem] lg:text-[1.62rem]">
+              Borrow or lend without unstaking.
+            </h1>
+            <p className="max-w-3xl text-[0.86rem] text-[color:var(--text-secondary)] sm:text-[0.94rem]">
+              Unlock USDC liquidity while validator rewards keep compounding.
+            </p>
           </div>
 
-          <div className="space-y-6">
+          <div className="surface-panel mt-6 px-4 py-4 sm:px-5">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="pixel-heading text-[0.58rem] text-[color:var(--text-secondary)]">
+                  Connected network
+                </p>
+                <p className="mt-1 text-[0.88rem] text-[color:var(--text-primary)]">
+                  {selectedChain.display} · {networkLabel}
+                </p>
+                <p className="mt-1 text-[0.68rem] text-[color:var(--text-secondary)]">
+                  Bech32 prefix {selectedChainNetwork.hrp}
+                </p>
+              </div>
+              <span className="pixel-chip text-[color:var(--text-secondary)]">
+                {selectedChainNetwork.chainId}
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-6">
             <div className="flex flex-col gap-2">
-              <p className="text-xs uppercase tracking-[0.35em] text-white/60">
-                Choose your Cosmos SDK chain
+              <p className="pixel-heading text-[0.58rem] text-[color:var(--text-secondary)]">
+                Choose a network
               </p>
-              <p className="text-sm text-white/70">
-                Pick the network you want to derive addresses for. We will use the correct bech32
-                prefix for each chain.
+              <p className="text-[0.76rem] text-[color:var(--text-secondary)] sm:text-[0.82rem]">
+                Pick the chain and environment for your wallet connection. We apply the right
+                bech32 prefix for each network.
               </p>
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-xs uppercase tracking-[0.35em] text-white/60">Environment</p>
+              <p className="pixel-heading text-[0.58rem] text-[color:var(--text-secondary)]">
+                Environment
+              </p>
               <div className="grid gap-3 sm:grid-cols-2">
                 {(["mainnet", "testnet"] as NetworkEnv[]).map((env) => (
                   <button
@@ -373,21 +418,21 @@ export default function Home() {
                     type="button"
                     onClick={() => setSelectedNetwork(env)}
                     aria-pressed={selectedNetwork === env}
-                    className={`rounded-2xl border p-4 text-left text-sm transition hover:border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                    className={`pixel-card surface-card focus-soft p-4 text-left text-[0.72rem] ${
                       selectedNetwork === env
-                        ? "border-white/60 bg-white/10 shadow-[0_20px_60px_-35px_rgba(0,0,0,1)]"
-                        : "border-white/5 bg-white/5"
+                        ? "border-[color:var(--accent-primary)] bg-[color:var(--surface-muted)]"
+                        : "hover:border-[color:var(--accent-primary)]"
                     }`}
                   >
-                    <p className="text-[0.85rem] uppercase tracking-[0.3em] text-white/60">
+                    <p className="pixel-heading text-[0.58rem] text-[color:var(--text-secondary)]">
                       {env === "mainnet" ? "Mainnet" : "Testnet"}
                     </p>
-                    <p className="mt-1 font-semibold text-white">
+                    <p className="mt-1 text-[0.76rem] text-[color:var(--text-primary)]">
                       {env === "mainnet"
                         ? "Production RPCs and balances"
                         : "Sandbox RPCs for testing"}
                     </p>
-                    <p className="text-xs text-white/60">
+                    <p className="mt-1 text-[0.68rem] text-[color:var(--text-secondary)]">
                       Applies to all chains in this selector.
                     </p>
                   </button>
@@ -395,50 +440,63 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               {CHAIN_OPTIONS.map((chain) => (
                 <button
                   key={chain.key}
                   type="button"
                   onClick={() => setSelectedChainKey(chain.key)}
                   aria-pressed={selectedChainKey === chain.key}
-                  className={`rounded-2xl border p-4 text-left text-sm transition hover:border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                  className={`pixel-card surface-card focus-soft p-4 text-left text-[0.72rem] ${
                     selectedChainKey === chain.key
-                      ? "border-white/60 bg-white/10 shadow-[0_20px_60px_-35px_rgba(0,0,0,1)]"
-                      : "border-white/5 bg-white/5"
+                      ? "border-[color:var(--accent-primary)] bg-[color:var(--surface-muted)]"
+                      : "hover:border-[color:var(--accent-primary)]"
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-[0.85rem] uppercase tracking-[0.3em] text-white/60">
-                        {chain.display}
-                      </p>
-                      <p className="mt-1 font-semibold text-white">
-                        Current ({selectedNetwork}):{" "}
-                        {chain.networks[selectedNetwork]?.chainId ?? "Unavailable"}
-                      </p>
-                      <p className="text-xs text-white/60">
-                        Mainnet: {chain.networks.mainnet.chainId}
-                      </p>
-                      <p className="text-xs text-white/60">
-                        Testnet: {chain.networks.testnet.chainId}
-                      </p>
+                  <div className="flex min-w-0 items-start justify-between gap-3">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="network-mark">
+                        <Image
+                          src={chain.logoSrc}
+                          alt={chain.logoAlt}
+                          width={28}
+                          height={28}
+                          className="h-7 w-7 flex-none"
+                        />
+                      </span>
+                      <div className="min-w-0">
+                        <p className="pixel-heading text-[0.58rem] text-[color:var(--text-secondary)]">
+                          {chain.display}
+                        </p>
+                        <p className="mt-1 text-[0.76rem] text-[color:var(--text-primary)]">
+                          Current ({selectedNetwork}):{" "}
+                          {chain.networks[selectedNetwork]?.chainId ?? "Unavailable"}
+                        </p>
+                        <p className="mt-1 text-[0.68rem] text-[color:var(--text-secondary)]">
+                          Mainnet: {chain.networks.mainnet.chainId}
+                        </p>
+                        <p className="text-[0.68rem] text-[color:var(--text-secondary)]">
+                          Testnet: {chain.networks.testnet.chainId}
+                        </p>
+                      </div>
                     </div>
-                    <span
-                      className={`rounded-full bg-gradient-to-r ${chain.accent} px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-slate-950`}
-                    >
+                    <span className="pixel-chip text-[color:var(--text-secondary)]">
                       {chain.key === selectedChainKey ? "Selected" : "Choose"}
                     </span>
                   </div>
-                  <p className="mt-2 text-xs text-white/60">{chain.description}</p>
+                  <p className="mt-2 text-[0.68rem] text-[color:var(--text-secondary)]">
+                    {chain.description}
+                  </p>
                 </button>
               ))}
             </div>
 
             <div className="flex flex-col gap-2">
-              <p className="text-xs uppercase tracking-[0.35em] text-white/60">Choose your wallet</p>
-              <p className="text-sm text-white/70">
-                Pick one connection method at a time. You can switch wallets whenever you need.
+              <p className="pixel-heading text-[0.58rem] text-[color:var(--text-secondary)]">
+                Connect your wallet
+              </p>
+              <p className="text-[0.76rem] text-[color:var(--text-secondary)] sm:text-[0.82rem]">
+                Choose one wallet method to continue. You can switch methods anytime.
               </p>
             </div>
 
@@ -447,24 +505,37 @@ export default function Home() {
                 type="button"
                 onClick={() => setSelectedWallet("keplr")}
                 aria-pressed={selectedWallet === "keplr"}
-                className={`rounded-2xl border p-4 text-left text-sm transition hover:border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                className={`pixel-card surface-card focus-soft p-4 text-left text-[0.72rem] ${
                   selectedWallet === "keplr"
-                    ? "border-white/60 bg-white/10 shadow-[0_20px_60px_-35px_rgba(0,0,0,1)]"
-                    : "border-white/5 bg-white/5"
+                    ? "border-[color:var(--accent-primary)] bg-[color:var(--surface-muted)]"
+                    : "hover:border-[color:var(--accent-primary)]"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[0.85rem] uppercase tracking-[0.3em] text-white/60">
-                      Keplr wallet
-                    </p>
-                    <p className="mt-1 font-semibold text-white">{connectionState}</p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="network-mark">
+                      <Image
+                        src="/keplr-logo.svg"
+                        alt="Keplr logo"
+                        width={28}
+                        height={28}
+                        className="h-7 w-7 flex-none"
+                      />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="pixel-heading text-[0.58rem] text-[color:var(--text-secondary)]">
+                        Keplr wallet
+                      </p>
+                      <p className="mt-1 text-[0.76rem] text-[color:var(--text-primary)]">
+                        {connectionState}
+                      </p>
+                    </div>
                   </div>
-                  <span className="rounded-full border border-white/20 px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-white/70">
+                  <span className="pixel-chip text-[color:var(--text-secondary)]">
                     {selectedWallet === "keplr" ? "Selected" : "Choose"}
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-white/60">
+                <p className="mt-2 text-[0.68rem] text-[color:var(--text-secondary)]">
                   {hasKeplr
                     ? "Keplr extension detected in this browser."
                     : "Install the Keplr extension to connect here."}
@@ -475,26 +546,39 @@ export default function Home() {
                 type="button"
                 onClick={() => setSelectedWallet("ledger")}
                 aria-pressed={selectedWallet === "ledger"}
-                className={`rounded-2xl border p-4 text-left text-sm transition hover:border-white/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+                className={`pixel-card surface-card focus-soft p-4 text-left text-[0.72rem] ${
                   selectedWallet === "ledger"
-                    ? "border-white/60 bg-white/10 shadow-[0_20px_60px_-35px_rgba(0,0,0,1)]"
-                    : "border-white/5 bg-white/5"
+                    ? "border-[color:var(--accent-primary)] bg-[color:var(--surface-muted)]"
+                    : "hover:border-[color:var(--accent-primary)]"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="text-[0.85rem] uppercase tracking-[0.3em] text-white/60">
-                      Ledger hardware
-                    </p>
-                    <p className="mt-1 font-semibold text-white">{ledgerConnectionState}</p>
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span className="network-mark">
+                      <Image
+                        src="/ledger-logo.svg"
+                        alt="Ledger logo"
+                        width={28}
+                        height={28}
+                        className="h-7 w-7 flex-none"
+                      />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="pixel-heading text-[0.58rem] text-[color:var(--text-secondary)]">
+                        Ledger hardware
+                      </p>
+                      <p className="mt-1 text-[0.76rem] text-[color:var(--text-primary)]">
+                        {ledgerConnectionState}
+                      </p>
+                    </div>
                   </div>
-                  <span className="rounded-full border border-white/20 px-3 py-1 text-[0.65rem] uppercase tracking-[0.2em] text-white/70">
+                  <span className="pixel-chip text-[color:var(--text-secondary)]">
                     {selectedWallet === "ledger" ? "Selected" : "Choose"}
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-white/60">
+                <p className="mt-2 text-[0.68rem] text-[color:var(--text-secondary)]">
                   {supportsLedger === false
-                    ? "WebUSB not available — use Chrome or Edge with USB enabled."
+                    ? "WebUSB not available. Use Chrome or Edge with USB enabled."
                     : "Connect over WebUSB from a supported browser."}
                 </p>
               </button>
@@ -505,7 +589,7 @@ export default function Home() {
                 type="button"
                 onClick={handleConnectSelected}
                 disabled={connectButtonDisabled}
-                className={`rounded-full bg-gradient-to-r ${selectedChain.accent} px-6 py-3 text-sm font-semibold uppercase tracking-[0.3em] text-slate-950 shadow-lg shadow-blue-500/30 transition hover:brightness-110 disabled:opacity-60 disabled:hover:brightness-100`}
+                className="btn-primary px-6 py-3 text-[0.66rem] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {connectButtonLabel}
               </button>
@@ -515,7 +599,7 @@ export default function Home() {
                   href="https://keplr.app"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-sm font-semibold text-cyan-300 underline-offset-4 hover:text-white"
+                  className="pixel-link text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)]"
                 >
                   Install Keplr
                 </a>
@@ -523,60 +607,74 @@ export default function Home() {
             </div>
 
             {supportsLedger === false && selectedWallet === "ledger" && (
-              <p className="text-xs text-white/60">
-                Ledger WebUSB is only available in Chromium browsers with USB permissions.
+              <p className="text-[0.68rem] text-[color:var(--text-secondary)]">
+                Ledger WebUSB is available in Chromium browsers with USB permissions.
               </p>
             )}
 
             {showKeplrStats && (
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Wallet</p>
-                  <p className="mt-1 font-semibold text-white">
+                <div className="surface-card pixel-card p-4">
+                  <p className="pixel-heading text-[0.56rem] text-[color:var(--text-secondary)]">
+                    Wallet
+                  </p>
+                  <p className="mt-1 text-[0.76rem] text-[color:var(--text-primary)]">
                     {walletAccount.address ? formatAddress(walletAccount.address) : "Not connected"}
                   </p>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Wallet name</p>
-                  <p className="mt-1 font-semibold text-white">{walletAccount.name ?? "N/A"}</p>
+                <div className="surface-card pixel-card p-4">
+                  <p className="pixel-heading text-[0.56rem] text-[color:var(--text-secondary)]">
+                    Wallet name
+                  </p>
+                  <p className="mt-1 text-[0.76rem] text-[color:var(--text-primary)]">
+                    {walletAccount.name ?? "N/A"}
+                  </p>
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Next step</p>
-                  <p className="mt-1 font-semibold text-white/80">
-                    Review any transactions in Keplr before approving them.
+                <div className="surface-card pixel-card p-4">
+                  <p className="pixel-heading text-[0.56rem] text-[color:var(--text-secondary)]">
+                    Next step
+                  </p>
+                  <p className="mt-1 text-[0.76rem] text-[color:var(--text-secondary)]">
+                    Review transactions in Keplr before approving them.
                   </p>
                 </div>
               </div>
             )}
 
             {showLedgerStats && (
-              <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Ledger address</p>
-                  <p className="mt-1 font-semibold text-white">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="surface-card pixel-card p-4">
+                  <p className="pixel-heading text-[0.56rem] text-[color:var(--text-secondary)]">
+                    Ledger address
+                  </p>
+                  <p className="mt-1 text-[0.76rem] text-[color:var(--text-primary)]">
                     {ledgerAccount.address ? formatAddress(ledgerAccount.address) : "Not connected"}
                   </p>
                   {ledgerAccount.publicKey && (
-                    <p className="text-[0.65rem] text-white/60 mt-2 break-all">
+                    <p className="mt-2 break-all text-[0.64rem] text-[color:var(--text-secondary)]">
                       {formatPublicKey(ledgerAccount.publicKey)}
                     </p>
                   )}
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Ledger app</p>
-                  <p className="mt-1 font-semibold text-white">
+                <div className="surface-card pixel-card p-4">
+                  <p className="pixel-heading text-[0.56rem] text-[color:var(--text-secondary)]">
+                    Ledger app
+                  </p>
+                  <p className="mt-1 text-[0.76rem] text-[color:var(--text-primary)]">
                     {ledgerAppInfo ? `Cosmos v${ledgerAppInfo.version}` : "Open Cosmos app on Ledger"}
                   </p>
                   {ledgerAppInfo && (
-                    <p className="text-xs text-white/60">
+                    <p className="text-[0.64rem] text-[color:var(--text-secondary)]">
                       {ledgerAppInfo.testMode ? "Test app" : "Production app"} ·{" "}
                       {ledgerAppInfo.deviceLocked ? "Locked" : "Unlocked"}
                     </p>
                   )}
                 </div>
-                <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                  <p className="text-xs uppercase tracking-[0.3em] text-white/60">Next step</p>
-                  <p className="mt-1 font-semibold text-white/80">
+                <div className="surface-card pixel-card p-4">
+                  <p className="pixel-heading text-[0.56rem] text-[color:var(--text-secondary)]">
+                    Next step
+                  </p>
+                  <p className="mt-1 text-[0.76rem] text-[color:var(--text-secondary)]">
                     {ledgerStatus === "connected"
                       ? "Approve Cosmos transactions directly on your Ledger."
                       : "Open the Cosmos app and confirm the connection on your Ledger device."}
@@ -586,15 +684,65 @@ export default function Home() {
             )}
 
             {!showKeplrStats && !showLedgerStats && (
-              <p className="text-sm text-white/70">Connect a wallet to view its details.</p>
+              <p className="text-[0.72rem] text-[color:var(--text-secondary)]">
+                Connect a wallet to view your address, app status, and next steps.
+              </p>
             )}
 
             {selectedStatusMessage && (
-              <p className="text-sm text-white/70">{selectedStatusMessage}</p>
+              <p className="text-[0.72rem] text-[color:var(--text-secondary)]">
+                {selectedStatusMessage}
+              </p>
             )}
           </div>
         </section>
+
+        <section id="resources" className="w-full">
+          <div className="surface-card pixel-card px-5 py-6 sm:px-6">
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="section-heading text-[color:var(--text-primary)]">Resources</h2>
+              <span className="pixel-chip text-[color:var(--text-secondary)]">
+                {resources.length} links
+              </span>
+            </div>
+
+            <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              {resources.map(({ name, href, tag, description }) => (
+                <li key={href} className="h-full">
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={`Go to ${name} in a new tab`}
+                    className="group pixel-card surface-card flex h-full min-w-0 flex-col gap-3 px-4 py-5 text-left text-[color:var(--text-primary)]"
+                  >
+                    <span className="flex min-w-0 items-start gap-3">
+                      <span className="resource-mark text-[color:var(--text-secondary)]">{tag}</span>
+                      <span className="flex min-w-0 flex-col gap-1">
+                        <span className="pixel-heading text-[0.72rem] text-[color:var(--text-primary)]">
+                          {name}
+                        </span>
+                        <span className="break-words text-[0.66rem] leading-[1.3] text-[color:var(--text-secondary)]">
+                          {description}
+                        </span>
+                      </span>
+                    </span>
+                    <span className="pixel-heading self-end text-[0.62rem] text-[color:var(--accent-primary)] transition-transform group-hover:translate-x-0.5">
+                      -&gt;
+                    </span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </section>
       </main>
+
+      <footer className="footer-panel py-7 text-center text-[0.64rem] text-[color:var(--text-secondary)]">
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-center gap-2 px-5 sm:px-6 lg:px-8">
+          <LogoMark size={36} className="h-10 w-10" ariaLabel="SudoStake mark" />
+        </div>
+      </footer>
     </div>
   );
 }
