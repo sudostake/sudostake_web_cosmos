@@ -14,6 +14,7 @@ import {
 } from "./lib/dashboardSession";
 
 type ConnectStatus = "idle" | "connecting" | "connected" | "error";
+type WalletPreset = "keplr" | "ledger";
 
 const formatAddress = (address: string) =>
   address ? `${address.slice(0, 6)}...${address.slice(-6)}` : "N/A";
@@ -56,6 +57,14 @@ type ResourceLink = {
   tag: string;
   description: string;
 };
+
+interface ConnectPresets {
+  selectedWallet: WalletPreset;
+  selectedChainKey: ChainKey;
+  selectedNetwork: NetworkEnv;
+}
+
+const CONNECT_PRESETS_STORAGE_KEY = "sudostake:connect-presets";
 
 const CHAIN_OPTIONS: ChainConfig[] = [
   {
@@ -119,6 +128,50 @@ const resources: ResourceLink[] = [
   },
 ];
 
+const isObjectRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isWalletPreset = (value: unknown): value is WalletPreset =>
+  value === "keplr" || value === "ledger";
+
+const isNetworkEnv = (value: unknown): value is NetworkEnv =>
+  value === "mainnet" || value === "testnet";
+
+const isChainKey = (value: unknown): value is ChainKey =>
+  typeof value === "string" && CHAIN_OPTIONS.some((chain) => chain.key === value);
+
+const getStoredConnectPresets = (): ConnectPresets | null => {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(CONNECT_PRESETS_STORAGE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (!isObjectRecord(parsed)) return null;
+
+    const selectedWallet = parsed.selectedWallet;
+    const selectedChainKey = parsed.selectedChainKey;
+    const selectedNetwork = parsed.selectedNetwork;
+
+    if (!isWalletPreset(selectedWallet)) return null;
+    if (!isChainKey(selectedChainKey)) return null;
+    if (!isNetworkEnv(selectedNetwork)) return null;
+
+    return {
+      selectedWallet,
+      selectedChainKey,
+      selectedNetwork,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const setStoredConnectPresets = (presets: ConnectPresets) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(CONNECT_PRESETS_STORAGE_KEY, JSON.stringify(presets));
+};
+
 export default function Home() {
   const router = useRouter();
   const [hasKeplr, setHasKeplr] = useState(false);
@@ -133,10 +186,11 @@ export default function Home() {
   const [ledgerAccount, setLedgerAccount] = useState<LedgerAccount>({});
   const [ledgerStatusMessage, setLedgerStatusMessage] = useState("");
   const [ledgerAppInfo, setLedgerAppInfo] = useState<LedgerAppInfo | null>(null);
-  const [selectedWallet, setSelectedWallet] = useState<"keplr" | "ledger">("keplr");
+  const [selectedWallet, setSelectedWallet] = useState<WalletPreset>("keplr");
   const [selectedChainKey, setSelectedChainKey] = useState<ChainKey>("chihuahua");
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkEnv>("mainnet");
   const [hasDashboardSession, setHasDashboardSession] = useState(false);
+  const [hasLoadedPresets, setHasLoadedPresets] = useState(false);
 
   const selectedChain = useMemo(
     () => CHAIN_OPTIONS.find((chain) => chain.key === selectedChainKey) ?? CHAIN_OPTIONS[0],
@@ -165,6 +219,26 @@ export default function Home() {
     if (typeof window === "undefined") return;
     setHasDashboardSession(Boolean(getDashboardSession()));
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const storedPresets = getStoredConnectPresets();
+    if (storedPresets) {
+      setSelectedWallet(storedPresets.selectedWallet);
+      setSelectedChainKey(storedPresets.selectedChainKey);
+      setSelectedNetwork(storedPresets.selectedNetwork);
+    }
+    setHasLoadedPresets(true);
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedPresets) return;
+    setStoredConnectPresets({
+      selectedWallet,
+      selectedChainKey,
+      selectedNetwork,
+    });
+  }, [hasLoadedPresets, selectedWallet, selectedChainKey, selectedNetwork]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
