@@ -2,10 +2,16 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import CosmosApp from "@ledgerhq/hw-app-cosmos";
 import type Transport from "@ledgerhq/hw-transport";
 import TransportWebUSB from "@ledgerhq/hw-transport-webusb";
 import { LogoMark } from "./components/LogoMark";
+import {
+  getDashboardSession,
+  setDashboardSession,
+} from "./lib/dashboardSession";
 
 type ConnectStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -114,6 +120,7 @@ const resources: ResourceLink[] = [
 ];
 
 export default function Home() {
+  const router = useRouter();
   const [hasKeplr, setHasKeplr] = useState(false);
   const [status, setStatus] = useState<ConnectStatus>("idle");
   const [walletAccount, setWalletAccount] = useState<{
@@ -129,6 +136,7 @@ export default function Home() {
   const [selectedWallet, setSelectedWallet] = useState<"keplr" | "ledger">("keplr");
   const [selectedChainKey, setSelectedChainKey] = useState<ChainKey>("chihuahua");
   const [selectedNetwork, setSelectedNetwork] = useState<NetworkEnv>("mainnet");
+  const [hasDashboardSession, setHasDashboardSession] = useState(false);
 
   const selectedChain = useMemo(
     () => CHAIN_OPTIONS.find((chain) => chain.key === selectedChainKey) ?? CHAIN_OPTIONS[0],
@@ -151,6 +159,11 @@ export default function Home() {
       setHasKeplr(Boolean(window.keplr));
     }, 0);
     return () => window.clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setHasDashboardSession(Boolean(getDashboardSession()));
   }, []);
 
   useEffect(() => {
@@ -198,14 +211,27 @@ export default function Home() {
     try {
       await window.keplr.enable(selectedChainNetwork.chainId);
       const key = await window.keplr.getKey(selectedChainNetwork.chainId);
-      setWalletAccount({
+      const nextWalletAccount = {
         address: key.bech32Address,
         name: key.name,
-      });
+      };
+      setWalletAccount(nextWalletAccount);
       setStatus("connected");
       setStatusMessage(
         `Connected to ${selectedChain.display} ${networkLabel} via ${key.name}.`
       );
+      setDashboardSession({
+        walletType: "keplr",
+        address: nextWalletAccount.address,
+        walletName: nextWalletAccount.name,
+        chainKey: selectedChain.key,
+        chainDisplay: selectedChain.display,
+        network: selectedNetwork,
+        chainId: selectedChainNetwork.chainId,
+        signedInAt: new Date().toISOString(),
+      });
+      setHasDashboardSession(true);
+      router.push("/dashboard");
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Wallet connection was canceled.";
@@ -324,6 +350,10 @@ export default function Home() {
 
   const showKeplrStats = status === "connected" && Boolean(walletAccount.address);
   const showLedgerStats = ledgerStatus === "connected" && Boolean(ledgerAccount.address);
+  const canLoginWithKeplr = showKeplrStats;
+  const canLoginWithLedger = showLedgerStats;
+  const canLoginWithSelectedWallet =
+    selectedWallet === "keplr" ? canLoginWithKeplr : canLoginWithLedger;
 
   const handleConnectSelected = () => {
     if (selectedWallet === "keplr") {
@@ -331,6 +361,63 @@ export default function Home() {
     }
     return connectLedger();
   };
+
+  const handleLoginToDashboard = () => {
+    const existingSession = getDashboardSession();
+    if (!canLoginWithSelectedWallet && existingSession) {
+      router.push("/dashboard");
+      return;
+    }
+
+    if (selectedWallet === "keplr") {
+      if (!walletAccount.address) {
+        setStatus("error");
+        setStatusMessage("Connect your Keplr wallet first, then log in to the dashboard.");
+        return;
+      }
+
+      setDashboardSession({
+        walletType: "keplr",
+        address: walletAccount.address,
+        walletName: walletAccount.name,
+        chainKey: selectedChain.key,
+        chainDisplay: selectedChain.display,
+        network: selectedNetwork,
+        chainId: selectedChainNetwork.chainId,
+        signedInAt: new Date().toISOString(),
+      });
+      setHasDashboardSession(true);
+      router.push("/dashboard");
+      return;
+    }
+
+    if (!ledgerAccount.address) {
+      setLedgerStatus("error");
+      setLedgerStatusMessage("Connect your Ledger first, then log in to the dashboard.");
+      return;
+    }
+
+    setDashboardSession({
+      walletType: "ledger",
+      address: ledgerAccount.address,
+      walletName: ledgerAppInfo?.version
+        ? `Ledger Cosmos v${ledgerAppInfo.version}`
+        : "Ledger Cosmos",
+      chainKey: selectedChain.key,
+      chainDisplay: selectedChain.display,
+      network: selectedNetwork,
+      chainId: selectedChainNetwork.chainId,
+      signedInAt: new Date().toISOString(),
+    });
+    setHasDashboardSession(true);
+    router.push("/dashboard");
+  };
+
+  const dashboardButtonLabel =
+    !canLoginWithSelectedWallet && hasDashboardSession
+      ? "Open Dashboard"
+      : "Log In to Dashboard";
+  const dashboardButtonDisabled = !canLoginWithSelectedWallet && !hasDashboardSession;
 
   return (
     <div id="top" className="min-h-dvh bg-[var(--background)] text-[color:var(--text-primary)]">
@@ -353,6 +440,12 @@ export default function Home() {
             >
               Connect
             </a>
+            <Link
+              href="/dashboard"
+              className="pixel-link focus-soft text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)]"
+            >
+              Dashboard
+            </Link>
             <a
               href="#resources"
               className="pixel-link focus-soft text-[color:var(--text-secondary)] hover:text-[color:var(--accent-primary)]"
@@ -594,6 +687,15 @@ export default function Home() {
                 {connectButtonLabel}
               </button>
 
+              <button
+                type="button"
+                onClick={handleLoginToDashboard}
+                disabled={dashboardButtonDisabled}
+                className="surface-card pixel-card px-6 py-3 text-[0.66rem] text-[color:var(--text-primary)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {dashboardButtonLabel}
+              </button>
+
               {selectedWallet === "keplr" && !hasKeplr && (
                 <a
                   href="https://keplr.app"
@@ -635,7 +737,7 @@ export default function Home() {
                     Next step
                   </p>
                   <p className="mt-1 text-[0.76rem] text-[color:var(--text-secondary)]">
-                    Review transactions in Keplr before approving them.
+                    Log in to dashboard to manage vault actions from this wallet.
                   </p>
                 </div>
               </div>
@@ -676,7 +778,7 @@ export default function Home() {
                   </p>
                   <p className="mt-1 text-[0.76rem] text-[color:var(--text-secondary)]">
                     {ledgerStatus === "connected"
-                      ? "Approve Cosmos transactions directly on your Ledger."
+                      ? "Log in to dashboard and approve Cosmos transactions on Ledger."
                       : "Open the Cosmos app and confirm the connection on your Ledger device."}
                   </p>
                 </div>
